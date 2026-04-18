@@ -1,5 +1,6 @@
 import { isRunningInExpoGo, requireOptionalNativeModule } from "expo";
 import { config } from "./config";
+import { atprotoIdentityResolver } from "./atproto-identity-resolver";
 
 type AtprotoIdentity = {
   did: string;
@@ -81,6 +82,7 @@ export async function signInWithAtproto(input?: string): Promise<AtprotoIdentity
 
   const client = new ExpoOAuthClient({
     handleResolver: config.atprotoHandleResolver,
+    identityResolver: atprotoIdentityResolver,
     clientMetadata: getClientMetadata(),
   });
 

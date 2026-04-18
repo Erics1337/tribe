@@ -24,3 +24,18 @@ if (abortSignalCtor && typeof abortSignalCtor.timeout !== "function") {
     return controller.signal;
   };
 }
+
+const abortSignalPrototype = abortSignalCtor?.prototype as
+  | (AbortSignal & {
+      throwIfAborted?: () => void;
+      reason?: unknown;
+    })
+  | undefined;
+
+if (abortSignalPrototype && typeof abortSignalPrototype.throwIfAborted !== "function") {
+  abortSignalPrototype.throwIfAborted = function throwIfAborted() {
+    if (this.aborted) {
+      throw this.reason instanceof Error ? this.reason : new Error("The operation was aborted.");
+    }
+  };
+}
