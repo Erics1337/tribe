@@ -1,0 +1,25 @@
+{
+  "name": "tribe",
+  "private": true,
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "scripts": {
+    "dev:api": "\"${npm_node_execpath:-node}\" ./scripts/check-node.mjs && pnpm --filter @tribe/api dev",
+    "dev:mobile": "\"${npm_node_execpath:-node}\" ./scripts/check-node.mjs && pnpm --filter @tribe/mobile dev",
+    "dev:ios": "./scripts/dev-ios.sh",
+    "dev:ios:native": "./scripts/dev-ios-native.sh",
+    "atproto:prepare-pages": "node ./scripts/prepare-atproto-pages.mjs",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.6",
+    "@types/node": "^24.7.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
