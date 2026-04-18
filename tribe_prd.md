@@ -210,6 +210,7 @@ Tribe should use AT Protocol where it provides strategic value while avoiding un
 - ensure architecture allows interoperability with broader ecosystem over time
 
 ### Not Required for MVP
+- Bluesky <> Tribe graph or content syncing
 - full plugin ecosystem
 - complex federation features exposed directly in product
 - advanced third-party custom feeds at launch
@@ -218,22 +219,33 @@ Tribe should use AT Protocol where it provides strategic value while avoiding un
 
 These are promising but should not block MVP.
 
-### 8.1 Mirror Mode
+### 8.1 Bluesky <> Tribe Syncing
+An opt-in syncing layer that lets users carry more of their AT Protocol social world into Tribe and optionally project selected Tribe activity back out to Bluesky-compatible clients.
+
+Potential directions:
+- import Bluesky follows, followers, or curated lists as suggestions for Tribe tiers
+- map selected Tribe relationships to app-private graph metadata without exposing private tier structure publicly
+- optionally mirror eligible Tribe posts to the user's AT Protocol repo with clear audience and privacy constraints
+- optionally surface selected public AT Protocol posts inside Tribe when they match the user's relationship context
+- provide user controls for one-way import, one-way publish, or two-way sync
+- make sync state understandable, reversible, and explicit at all times
+
+### 8.2 Mirror Mode
 An opt-in feature that lets users understand roughly how reciprocal a relationship is. This should be handled carefully because it can create emotional harm if presented bluntly.
 
-### 8.2 Social Debt or Broadcast Budget
+### 8.3 Social Debt or Broadcast Budget
 A mechanism that limits high-volume broad sharing and encourages selectivity.
 
-### 8.3 Quiet Modes and Content Filters
+### 8.4 Quiet Modes and Content Filters
 Users define personal content boundaries such as politics, conflict, or event spam.
 
-### 8.4 Ephemeral Inner Circle Content
+### 8.5 Ephemeral Inner Circle Content
 Private stories, quick voice notes, or temporary check-ins for closest ties.
 
-### 8.5 Group Utilities
+### 8.6 Group Utilities
 Small group albums, event planning, polls, and ritual-based social prompts.
 
-### 8.6 Tier Analytics
+### 8.7 Tier Analytics
 Private, user-facing insights such as:
 - who they engage with most
 - which tiers are overloaded
@@ -320,6 +332,9 @@ Users should feel that their identity and relationships belong to them, not the 
 - what content can be fully portable versus app-specific
 - best approach for private or encrypted content within protocol constraints
 - whether media should be stored directly in protocol-linked storage or a hybrid architecture
+- how Bluesky follows, lists, and public posts should map into Tribe tiers without collapsing private relationship intent
+- whether Tribe-to-Bluesky sync should be publish-only, import-only, or selectively bi-directional
+- how sync conflicts, deletions, and privacy downgrades should be handled across Tribe and Bluesky surfaces
 
 ## 13. Risks and Mitigations
 
