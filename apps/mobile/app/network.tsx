@@ -26,7 +26,7 @@ type PublicPost = {
   indexedAt: string;
 };
 export default function Network() {
-  const { user } = useSession();
+  const { user, loading } = useSession();
   const [search, setSearch] = useState(''),
     [q, setQ] = useState(''),
     [actor, setActor] = useState<Actor | null>(null);
@@ -40,11 +40,16 @@ export default function Network() {
     queryFn: () => api<PublicPost[]>('/network/posts?did=' + encodeURIComponent(actor!.did)),
     enabled: !!actor,
   });
+  if (loading)
+    return (
+      <Page>
+        <Loading />
+      </Page>
+    );
   if (!user) return <Redirect href="/sign-in" />;
   return (
     <Page back>
       <Header
-        eyebrow="The wider world"
         title="Beyond your circles."
         subtitle="Explore public profiles and posts on the AT network. These posts can be seen outside Tribe."
       />
@@ -78,17 +83,28 @@ export default function Network() {
       </Button>
       <ErrorText error={result.error ?? posts.error} />
       {result.isFetching && <Loading />}
+      {result.data?.length === 0 && (
+        <Empty
+          title="No profiles found"
+          body="Check the handle and try another search."
+          icon="search-outline"
+        />
+      )}
       {result.data?.map((p) => (
-        <View style={s.card} key={p.did}>
-          <View style={s.row}>
+        <View style={[s.row, { paddingVertical: 12 }]} key={p.did}>
+          <View style={[s.row, { flex: 1, minWidth: 0 }]}>
             <Avatar user={p} />
-            <View>
-              <Text style={s.heading}>{p.displayName}</Text>
-              <Text style={s.small}>@{p.handle}</Text>
+            <View style={s.person}>
+              <Text style={s.label} numberOfLines={1}>
+                {p.displayName}
+              </Text>
+              <Text style={s.small} numberOfLines={1}>
+                @{p.handle}
+              </Text>
             </View>
           </View>
           <Button quiet onPress={() => setActor(p)}>
-            See public posts
+            See posts
           </Button>
         </View>
       ))}

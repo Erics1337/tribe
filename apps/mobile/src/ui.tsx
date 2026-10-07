@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,13 @@ import {
   ActivityIndicator,
   Image,
   Platform,
+  useWindowDimensions,
   type ColorValue,
   type TextInputProps,
+  type ViewStyle,
+  type StyleProp,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import type { Profile, Tier } from '@tribe/domain';
@@ -21,17 +24,22 @@ export const colors = {
   bg: '#F6F8F7',
   paper: '#FFFFFF',
   ink: '#182F29',
-  muted: '#667B73',
-  line: '#DFE8E3',
+  muted: '#536B61',
+  line: '#DDE6E1',
   green: '#275F49',
+  greenPressed: '#1B4937',
   soft: '#E7F0EB',
+  subtle: '#EFF3F1',
+  disabled: '#E5EAE7',
+  focus: '#275F49',
   danger: '#A63737',
+  dangerSoft: '#F8EDEC',
 };
 export const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.bg },
   container: {
     width: '100%',
-    maxWidth: 640,
+    maxWidth: 680,
     alignSelf: 'center',
     padding: 24,
     paddingBottom: 40,
@@ -41,37 +49,52 @@ export const s = StyleSheet.create({
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   title: {
     fontFamily: 'Manrope_600SemiBold',
-    fontSize: 32,
-    lineHeight: 42,
-    letterSpacing: -1.1,
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: -0.8,
     color: colors.ink,
   },
-  heading: { fontFamily: 'Manrope_600SemiBold', fontSize: 20, lineHeight: 28, color: colors.ink },
+  heading: {
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 18,
+    lineHeight: 26,
+    letterSpacing: -0.25,
+    color: colors.ink,
+  },
   body: { fontFamily: 'Manrope_400Regular', fontSize: 15, lineHeight: 24, color: colors.muted },
   small: { fontFamily: 'Manrope_500Medium', fontSize: 12, lineHeight: 19, color: colors.muted },
   card: {
     backgroundColor: colors.paper,
-    borderRadius: 24,
+    borderRadius: 16,
     padding: 20,
     gap: 16,
     borderWidth: 1,
     borderColor: colors.line,
   },
+  section: { gap: 16 },
+  field: { gap: 8 },
   input: {
     backgroundColor: colors.paper,
     borderColor: colors.line,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     color: colors.ink,
     fontFamily: 'Manrope_400Regular',
     fontSize: 15,
     minHeight: 52,
   },
-  label: { fontFamily: 'Manrope_600SemiBold', fontSize: 13, color: colors.ink },
+  label: { fontFamily: 'Manrope_600SemiBold', fontSize: 14, lineHeight: 20, color: colors.ink },
   divider: { height: 1, backgroundColor: colors.line },
   error: { color: colors.danger, fontFamily: 'Manrope_500Medium', fontSize: 14, lineHeight: 22 },
-  pill: { borderRadius: 100, paddingHorizontal: 16, paddingVertical: 11, minHeight: 44 },
+  pill: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 46,
+    justifyContent: 'center',
+  },
   avatar: {
     width: 44,
     height: 44,
@@ -79,6 +102,15 @@ export const s = StyleSheet.create({
     backgroundColor: colors.soft,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  person: { flex: 1, minWidth: 0, gap: 2 },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 72,
+    paddingVertical: 12,
   },
 });
 export function Icon({
@@ -92,6 +124,78 @@ export function Icon({
 }) {
   return <Ionicons name={name} size={size} color={color} />;
 }
+export function Action({
+  children,
+  onPress,
+  label,
+  selected = false,
+  disabled = false,
+  style,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  label?: string;
+  selected?: boolean;
+  disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const [hovered, setHovered] = useState(false),
+    [focused, setFocused] = useState(false);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, selected }}
+      disabled={disabled}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={({ pressed }) => [
+        { borderRadius: 12, minHeight: 48 },
+        style,
+        hovered && !disabled && { backgroundColor: selected ? colors.greenPressed : colors.subtle },
+        pressed && !disabled && { backgroundColor: selected ? colors.greenPressed : colors.soft },
+        focused &&
+          Platform.OS === 'web' &&
+          ({
+            outlineStyle: 'solid',
+            outlineWidth: 2,
+            outlineColor: colors.focus,
+            outlineOffset: 3,
+          } as ViewStyle),
+      ]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+export function IconButton({
+  name,
+  onPress,
+  label,
+  disabled = false,
+  selected = false,
+}: {
+  name: React.ComponentProps<typeof Ionicons>['name'];
+  onPress: () => void;
+  label: string;
+  disabled?: boolean;
+  selected?: boolean;
+}) {
+  return (
+    <Action
+      label={label}
+      onPress={onPress}
+      disabled={disabled}
+      selected={selected}
+      style={{ minWidth: 48, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Icon name={name} color={selected ? colors.green : colors.muted} />
+    </Action>
+  );
+}
 export function Button({
   children,
   onPress,
@@ -99,6 +203,7 @@ export function Button({
   quiet = false,
   danger = false,
   icon,
+  busy = false,
 }: {
   children: React.ReactNode;
   onPress: () => void;
@@ -106,33 +211,74 @@ export function Button({
   quiet?: boolean;
   danger?: boolean;
   icon?: React.ComponentProps<typeof Ionicons>['name'];
+  busy?: boolean;
 }) {
+  const [hovered, setHovered] = useState(false),
+    [focused, setFocused] = useState(false);
+  const unavailable = disabled || busy;
+  const ink = unavailable
+    ? colors.muted
+    : quiet
+      ? danger
+        ? colors.danger
+        : colors.green
+      : colors.paper;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: unavailable, busy }}
       onPress={onPress}
-      disabled={disabled}
+      disabled={unavailable}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       style={({ pressed }) => [
         {
-          minHeight: 50,
-          borderRadius: 16,
-          paddingHorizontal: 20,
-          paddingVertical: 14,
+          minHeight: 48,
+          borderRadius: 12,
+          paddingHorizontal: 18,
+          paddingVertical: 13,
           flexDirection: 'row',
           gap: 8,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: quiet ? colors.soft : danger ? colors.danger : colors.green,
-          opacity: disabled ? 0.45 : pressed ? 0.75 : 1,
+          backgroundColor: unavailable
+            ? colors.disabled
+            : quiet
+              ? danger
+                ? colors.dangerSoft
+                : colors.soft
+              : danger
+                ? colors.danger
+                : pressed || hovered
+                  ? colors.greenPressed
+                  : colors.green,
         },
+        quiet && (pressed || hovered) && !unavailable && { backgroundColor: colors.disabled },
+        focused &&
+          Platform.OS === 'web' &&
+          ({
+            outlineStyle: 'solid',
+            outlineWidth: 2,
+            outlineColor: colors.focus,
+            outlineOffset: 3,
+          } as ViewStyle),
       ]}
     >
-      {icon && <Icon name={icon} size={18} color={quiet ? colors.green : 'white'} />}
+      {busy ? (
+        <ActivityIndicator color={ink} size="small" />
+      ) : (
+        icon && <Icon name={icon} size={18} color={ink} />
+      )}
       <Text
         style={{
           fontFamily: 'Manrope_600SemiBold',
           fontSize: 14,
-          color: quiet ? colors.green : 'white',
+          lineHeight: 20,
+          color: ink,
+          textAlign: 'center',
+          flexShrink: 1,
         }}
       >
         {children}
@@ -141,50 +287,120 @@ export function Button({
   );
 }
 export function Input(props: TextInputProps) {
+  const [focused, setFocused] = useState(false);
   return (
-    <TextInput placeholderTextColor={colors.muted} {...props} style={[s.input, props.style]} />
+    <TextInput
+      placeholderTextColor={colors.muted}
+      selectionColor={colors.green}
+      {...props}
+      onFocus={(e) => {
+        setFocused(true);
+        props.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        props.onBlur?.(e);
+      }}
+      style={[
+        s.input,
+        props.multiline && { textAlignVertical: 'top', minHeight: 104 },
+        focused && {
+          borderColor: colors.focus,
+          borderWidth: 2,
+          paddingHorizontal: 15,
+          paddingVertical: 13,
+        },
+        props.editable === false && { backgroundColor: colors.subtle },
+        props.style,
+      ]}
+    />
   );
 }
-export function Page({ children, back = false }: { children: React.ReactNode; back?: boolean }) {
+export function Page({
+  children,
+  back = false,
+  maxWidth = 680,
+  feedback,
+}: {
+  children: React.ReactNode;
+  back?: boolean;
+  maxWidth?: number;
+  feedback?: React.ReactNode;
+}) {
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={s.page} edges={['top', 'left', 'right']}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.container}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={[
+          s.container,
+          {
+            maxWidth,
+            paddingHorizontal: width < 360 ? 16 : 24,
+            paddingTop: width >= 900 ? 40 : 24,
+          },
+        ]}
+      >
         {back && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
+          <Action
+            label="Go back"
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            style={[s.row, { minHeight: 44 }]}
+            style={[s.row, { alignSelf: 'flex-start', paddingRight: 12 }]}
           >
-            <Icon name="arrow-back-outline" />
+            <Icon name="chevron-back-outline" size={20} />
             <Text style={s.label}>Back</Text>
-          </Pressable>
+          </Action>
         )}
         {children}
       </ScrollView>
+      {feedback && (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            bottom: 16 + insets.bottom,
+            left: 0,
+            right: 0,
+            paddingHorizontal: 16,
+            alignItems: 'center',
+          }}
+        >
+          <View style={{ width: '100%', maxWidth: Math.min(maxWidth - 32, 640) }}>{feedback}</View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
-export function Header({
-  eyebrow,
+export function Header({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <View style={{ gap: 10 }}>
+      <Text accessibilityRole="header" style={s.title}>
+        {title}
+      </Text>
+      {subtitle && <Text style={[s.body, { maxWidth: 520 }]}>{subtitle}</Text>}
+    </View>
+  );
+}
+export function Section({
   title,
-  subtitle,
+  description,
+  children,
 }: {
-  eyebrow?: string;
   title: string;
-  subtitle?: string;
+  description?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <View style={{ gap: 8 }}>
-      {eyebrow && (
-        <Text
-          style={[s.small, { letterSpacing: 2, color: colors.green, textTransform: 'uppercase' }]}
-        >
-          {eyebrow}
+    <View style={s.section}>
+      <View style={{ gap: 6 }}>
+        <Text accessibilityRole="header" style={s.heading}>
+          {title}
         </Text>
-      )}
-      <Text style={s.title}>{title}</Text>
-      {subtitle && <Text style={s.body}>{subtitle}</Text>}
+        {description && <Text style={s.body}>{description}</Text>}
+      </View>
+      {children}
     </View>
   );
 }
@@ -195,27 +411,93 @@ export function Avatar({
   user: Pick<Profile, 'displayName' | 'avatarUrl'>;
   size?: number;
 }) {
-  return user.avatarUrl ? (
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [user.avatarUrl]);
+  return user.avatarUrl && !failed ? (
     <Image
       accessibilityLabel={user.displayName}
       source={{ uri: user.avatarUrl }}
-      style={{ width: size, height: size, borderRadius: size / 2 }}
+      onError={() => setFailed(true)}
+      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.soft }}
     />
   ) : (
-    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Text style={[s.heading, { fontSize: size * 0.35 }]}>{user.displayName.slice(0, 1)}</Text>
+    <View
+      accessibilityLabel={user.displayName}
+      style={[s.avatar, { width: size, height: size, borderRadius: size / 2 }]}
+    >
+      <Text style={[s.heading, { fontSize: size * 0.35, color: colors.green }]}>
+        {user.displayName.slice(0, 1)}
+      </Text>
     </View>
   );
 }
 export function ErrorText({ error }: { error: unknown }) {
   return error ? (
-    <Text accessibilityRole="alert" style={s.error}>
-      {error instanceof Error ? error.message : String(error)}
-    </Text>
+    <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      style={{ backgroundColor: colors.dangerSoft, padding: 16, borderRadius: 12 }}
+    >
+      <Text style={s.error}>{error instanceof Error ? error.message : String(error)}</Text>
+    </View>
   ) : null;
 }
+export function Feedback({
+  message,
+  error,
+  onDismiss,
+}: {
+  message?: string;
+  error?: unknown;
+  onDismiss: () => void;
+}) {
+  const text = error ? (error instanceof Error ? error.message : String(error)) : message;
+  if (!text) return null;
+  return (
+    <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      style={[
+        s.row,
+        {
+          padding: 12,
+          paddingLeft: 16,
+          borderRadius: 16,
+          backgroundColor: error ? colors.dangerSoft : colors.soft,
+          borderWidth: 1,
+          borderColor: error ? colors.danger : colors.green,
+        },
+      ]}
+    >
+      <Icon
+        name={error ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+        color={error ? colors.danger : colors.green}
+      />
+      <Text style={[s.body, { flex: 1, color: error ? colors.danger : colors.green }]}>{text}</Text>
+      <IconButton name="close-outline" label="Dismiss message" onPress={onDismiss} />
+    </View>
+  );
+}
 export function Loading() {
-  return <ActivityIndicator color={colors.green} style={{ margin: 24 }} />;
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel="Loading"
+      style={{ paddingVertical: 24, gap: 12 }}
+    >
+      {[100, 72, 88].map((width, i) => (
+        <View
+          key={i}
+          style={{
+            height: i ? 14 : 20,
+            width: `${width}%`,
+            borderRadius: 6,
+            backgroundColor: colors.line,
+          }}
+        />
+      ))}
+    </View>
+  );
 }
 export function Empty({
   title,
@@ -227,10 +509,8 @@ export function Empty({
   icon?: React.ComponentProps<typeof Ionicons>['name'];
 }) {
   return (
-    <View style={[s.card, { paddingVertical: 40, alignItems: 'center' }]}>
-      <View style={[s.avatar, { width: 64, height: 64, borderRadius: 32 }]}>
-        <Icon name={icon} size={28} color={colors.green} />
-      </View>
+    <View style={{ paddingVertical: 36, gap: 14, alignItems: 'center' }}>
+      <Icon name={icon} size={32} color={colors.green} />
       <Text style={[s.heading, { textAlign: 'center' }]}>{title}</Text>
       <Text style={[s.body, { textAlign: 'center', maxWidth: 330 }]}>{body}</Text>
     </View>
@@ -249,27 +529,21 @@ export function TierPicker({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8 }}
+      contentContainerStyle={{ gap: 6, padding: 3 }}
     >
       {(all ? ['all', ...tiers] : tiers).map((t) => (
-        <Pressable
+        <Action
           key={t}
-          accessibilityRole="button"
-          accessibilityState={{ selected: t === value }}
+          selected={t === value}
           onPress={() => onChange(t as Tier | 'all')}
-          style={[
-            s.pill,
-            {
-              backgroundColor: t === value ? colors.green : colors.paper,
-              borderColor: colors.line,
-              borderWidth: t === value ? 0 : 1,
-            },
-          ]}
+          style={[s.pill, { backgroundColor: t === value ? colors.green : colors.subtle }]}
         >
-          <Text style={[s.label, { color: t === value ? 'white' : colors.muted }]}>
+          <Text
+            style={[s.label, { fontSize: 13, color: t === value ? colors.paper : colors.muted }]}
+          >
             {t === 'all' ? 'All moments' : labels[t as Tier]}
           </Text>
-        </Pressable>
+        </Action>
       ))}
     </ScrollView>
   );

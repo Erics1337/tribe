@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { Feed, Tier } from '@tribe/domain';
@@ -15,6 +15,8 @@ import {
   Button,
   Icon,
   Avatar,
+  IconButton,
+  Action,
   s,
   colors,
 } from '../../src/ui';
@@ -44,37 +46,30 @@ export default function Home() {
       <View style={s.between}>
         <View style={s.row}>
           <Text style={[s.heading, { fontSize: 26, letterSpacing: -1.2 }]}>tribe.</Text>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green }} />
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open your profile"
+        <Action
+          label="Open your profile"
+          style={{ minWidth: 48, alignItems: 'center', justifyContent: 'center' }}
           onPress={() => router.push('/profile')}
         >
           {user && <Avatar user={user} size={38} />}
-        </Pressable>
+        </Action>
       </View>
       <Header
-        eyebrow="A little closer"
         title="Your people. Your pace."
         subtitle="The everyday moments worth making room for."
       />
-      <View style={[s.card, { backgroundColor: colors.soft, padding: 16 }]}>
-        <View style={s.between}>
-          <View style={s.row}>
-            <Icon name="lock-closed-outline" size={18} color={colors.green} />
-            <Text style={s.label}>A space for familiar faces</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Refresh moments"
-            onPress={() => feed.refetch()}
-            style={{ padding: 6 }}
-          >
-            <Icon name="refresh-outline" size={19} />
-          </Pressable>
+      <View style={s.between}>
+        <View style={[s.row, { gap: 8, flex: 1 }]}>
+          <Icon name="lock-closed-outline" size={16} color={colors.green} />
+          <Text style={s.small}>Private moments, shared intentionally.</Text>
         </View>
-        <Text style={s.small}>Private moments, shared intentionally.</Text>
+        <IconButton
+          name="refresh-outline"
+          label="Refresh moments"
+          onPress={() => feed.refetch()}
+          disabled={feed.isFetching}
+        />
       </View>
       <TierPicker value={tier} onChange={setTier} all />
       <ErrorText error={feed.error ?? reaction.error} />
@@ -108,8 +103,7 @@ export default function Home() {
           </View>
         )
       )}
-      <Pressable
-        accessibilityRole="button"
+      <Action
         onPress={() => router.push('/network')}
         style={[s.between, { paddingVertical: 16, borderTopWidth: 1, borderTopColor: colors.line }]}
       >
@@ -118,7 +112,7 @@ export default function Home() {
           <Text style={s.small}>Explore the public AT network</Text>
         </View>
         <Icon name="arrow-forward-outline" size={20} />
-      </Pressable>
+      </Action>
     </Page>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text, View, Pressable, Share } from 'react-native';
+import { Text, View, Share } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   tiers,
@@ -25,6 +25,7 @@ import {
   confirmAction,
   s,
   colors,
+  Action,
 } from '../../src/ui';
 export default function Circles() {
   const query = useQueryClient();
@@ -59,36 +60,41 @@ export default function Circles() {
   return (
     <Page>
       <Header
-        eyebrow="Relationships, with intention"
         title="Make space for your people."
         subtitle="Your circles are private. Wider circles include the people in your smaller ones."
       />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        {tiers.map((t) => (
-          <View key={t} style={[s.card, { width: '48%', padding: 18, gap: 10 }]}>
-            <View style={s.between}>
-              <Text style={s.label}>{labels[t]}</Text>
-              <Icon name="ellipse-outline" size={20} color={colors.green} />
-            </View>
-            <Text style={[s.title, { fontSize: 28 }]}>
-              {counts[t]}
-              <Text style={[s.body, { fontSize: 16 }]}> / {caps[t]}</Text>
-            </Text>
-            <View style={{ height: 4, backgroundColor: colors.soft, borderRadius: 4 }}>
+      <View style={s.card}>
+        {tiers.map((t, i) => (
+          <View key={t} style={[s.between, { paddingVertical: 8 }]}>
+            <View style={[s.row, { flex: 1 }]}>
               <View
-                style={{
-                  height: 4,
-                  width: `${(counts[t] / caps[t]) * 100}%`,
-                  backgroundColor: colors.green,
-                  borderRadius: 4,
-                }}
-              />
+                style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <View
+                  style={{
+                    width: 12 + i * 5,
+                    height: 12 + i * 5,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: colors.green,
+                  }}
+                />
+              </View>
+              <Text style={s.label}>{labels[t]}</Text>
             </View>
+            <Text
+              accessibilityLabel={`${labels[t]}: ${counts[t]} of ${caps[t]} connections`}
+              style={[s.label, { fontVariant: ['tabular-nums'], fontSize: 16 }]}
+            >
+              {counts[t]} <Text style={s.small}>of {caps[t]}</Text>
+            </Text>
           </View>
         ))}
       </View>
-      <View style={s.card}>
-        <Text style={s.heading}>Find a familiar face</Text>
+      <View style={s.section}>
+        <Text accessibilityRole="header" style={s.heading}>
+          Find a familiar face
+        </Text>
         <Input
           accessibilityLabel="Find people by handle"
           value={search}
@@ -112,6 +118,13 @@ export default function Circles() {
         </Text>
         <ErrorText error={result.error ?? save.error} />
         {result.isFetching && <Loading />}
+        {result.data?.length === 0 && (
+          <Empty
+            title="No familiar faces found"
+            body="Check the spelling of the handle and try again."
+            icon="search-outline"
+          />
+        )}
         {result.data?.map((p) => (
           <View style={s.between} key={p.did}>
             <View style={[s.row, { flex: 1 }]}>
@@ -164,28 +177,40 @@ export default function Circles() {
         return (
           members.length > 0 && (
             <View key={t} style={{ gap: 12 }}>
-              <Text style={[s.small, { letterSpacing: 1.5, textTransform: 'uppercase' }]}>
+              <Text accessibilityRole="header" style={s.heading}>
                 {labels[t]}
               </Text>
               {members.map((c) => (
-                <View key={c.did} style={s.card}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={'Manage ' + c.displayName}
+                <View
+                  key={c.did}
+                  style={{
+                    gap: 12,
+                    paddingBottom: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.line,
+                  }}
+                >
+                  <Action
+                    label={'Manage ' + c.displayName}
                     onPress={() => setSelected(selected === c.did ? null : c.did)}
                     style={s.between}
                   >
-                    <View style={s.row}>
+                    <View style={[s.row, { flex: 1, minWidth: 0 }]}>
                       <Avatar user={c} />
-                      <View>
-                        <Text style={s.label}>{c.displayName}</Text>
+                      <View style={s.person}>
+                        <Text style={s.label} numberOfLines={1}>
+                          {c.displayName}
+                        </Text>
                         <Text style={s.small}>
                           {c.joined ? 'On Tribe' : 'Hasn’t joined Tribe yet'}
                         </Text>
                       </View>
                     </View>
-                    <Icon name="chevron-down-outline" size={18} />
-                  </Pressable>
+                    <Icon
+                      name={selected === c.did ? 'chevron-up-outline' : 'chevron-down-outline'}
+                      size={18}
+                    />
+                  </Action>
                   {selected === c.did && (
                     <>
                       <TierPicker

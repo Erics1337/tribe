@@ -1,30 +1,43 @@
 import { useState } from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { useSession } from '../src/session';
 import { api } from '../src/api';
-import { Page, Header, Button, ErrorText, s } from '../src/ui';
+import { Page, Header, Button, ErrorText, Avatar, Icon, Loading, s, colors } from '../src/ui';
 import type { Profile } from '@tribe/domain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function Invite() {
   const { token } = useLocalSearchParams<{ token: string }>(),
-    { user } = useSession();
+    { user, loading } = useSession();
   const accept = useMutation({
     mutationFn: () =>
       api<{ inviter: Profile; message: string }>('/invitations/accept', 'POST', { token }),
   });
+  if (loading)
+    return (
+      <Page>
+        <Loading />
+      </Page>
+    );
   return (
     <Page back>
       <Header
-        eyebrow="A familiar face awaits"
         title="Come a little closer."
         subtitle="This invitation connects you with someone on Tribe. It doesn’t grant access to older private moments."
       />
+      <View style={{ paddingVertical: 12 }}>
+        <Icon name="people-outline" size={40} color={colors.green} />
+      </View>
       <ErrorText error={accept.error} />
       {accept.data ? (
         <>
-          <Text style={s.heading}>{accept.data.inviter.displayName} invited you.</Text>
+          <View style={s.row}>
+            <Avatar user={accept.data.inviter} />
+            <Text style={[s.heading, { flex: 1 }]}>
+              {accept.data.inviter.displayName} invited you.
+            </Text>
+          </View>
           <Text style={s.body}>
             Find their handle in Circles and choose where they belong: @{accept.data.inviter.handle}
           </Text>

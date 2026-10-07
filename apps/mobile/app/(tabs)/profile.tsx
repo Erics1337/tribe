@@ -21,6 +21,7 @@ import {
   confirmAction,
   s,
   colors,
+  Feedback,
 } from '../../src/ui';
 type Me = Profile & {
   notifications: boolean;
@@ -37,7 +38,8 @@ export default function ProfileScreen() {
     [end, setEnd] = useState('8'),
     [error, setError] = useState<unknown>(null),
     [busy, setBusy] = useState(false),
-    [notice, setNotice] = useState('');
+    [notice, setNotice] = useState(''),
+    [showSessions, setShowSessions] = useState(false);
   const me = useQuery({ queryKey: ['me'], queryFn: () => api<Me>('/me') });
   const sessions = useQuery({
     queryKey: ['sessions'],
@@ -55,13 +57,14 @@ export default function ProfileScreen() {
       setEnd(String(me.data.quietEnd));
     }
   }, [me.data]);
-  async function act(fn: () => Promise<unknown>) {
+  async function act(fn: () => Promise<unknown>, success?: string) {
     setBusy(true);
     setError(null);
     setNotice('');
     try {
       await fn();
       await query.invalidateQueries();
+      if (success) setNotice(success);
     } catch (e) {
       setError(e);
     } finally {
@@ -120,34 +123,57 @@ export default function ProfileScreen() {
     );
   }
   return (
-    <Page>
-      <Header eyebrow="Your own little corner" title="You, on Tribe." />
+    <Page
+      feedback={
+        <Feedback
+          error={error}
+          message={notice}
+          onDismiss={() => {
+            setError(null);
+            setNotice('');
+          }}
+        />
+      }
+    >
+      <Header title="You, on Tribe." />
       {user && (
-        <View style={[s.card, { alignItems: 'center', paddingVertical: 28 }]}>
-          <Avatar user={user} size={76} />
-          <Text style={s.heading}>{user.displayName}</Text>
-          <Text style={s.small}>@{user.handle}</Text>
+        <View
+          style={[
+            s.row,
+            { paddingBottom: 24, borderBottomWidth: 1, borderBottomColor: colors.line },
+          ]}
+        >
+          <Avatar user={user} size={64} />
+          <View style={s.person}>
+            <Text style={s.heading}>{user.displayName}</Text>
+            <Text style={s.small}>@{user.handle}</Text>
+          </View>
         </View>
       )}
-      <ErrorText error={error ?? me.error ?? sessions.error ?? safety.error} />
-      {notice && <Text style={s.body}>{notice}</Text>}
-      <View style={s.card}>
-        <Text style={s.heading}>Your Tribe profile</Text>
-        <Text style={s.label}>Name</Text>
-        <Input
-          accessibilityLabel="Display name"
-          value={name}
-          onChangeText={setName}
-          maxLength={80}
-        />
-        <Text style={s.label}>A little about you</Text>
-        <Input
-          accessibilityLabel="Profile bio"
-          value={bio}
-          onChangeText={setBio}
-          multiline
-          maxLength={500}
-        />
+      <ErrorText error={me.error ?? sessions.error ?? safety.error} />
+      <View style={s.section}>
+        <Text accessibilityRole="header" style={s.heading}>
+          Your Tribe profile
+        </Text>
+        <View style={s.field}>
+          <Text style={s.label}>Name</Text>
+          <Input
+            accessibilityLabel="Display name"
+            value={name}
+            onChangeText={setName}
+            maxLength={80}
+          />
+        </View>
+        <View style={s.field}>
+          <Text style={s.label}>A little about you</Text>
+          <Input
+            accessibilityLabel="Profile bio"
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            maxLength={500}
+          />
+        </View>
         <Button
           disabled={busy || !name.trim()}
           onPress={() =>
@@ -165,7 +191,7 @@ export default function ProfileScreen() {
           provider.
         </Text>
       </View>
-      <View style={s.card}>
+      <View style={s.section}>
         <View style={s.between}>
           <View style={{ flex: 1 }}>
             <Text style={s.heading}>A gentle heads-up</Text>
@@ -176,10 +202,16 @@ export default function ProfileScreen() {
             value={me.data?.notifications ?? false}
             disabled={busy}
             trackColor={{ true: colors.green, false: colors.line }}
-            onValueChange={(v) => act(() => push(v))}
+            onValueChange={(v) =>
+              act(() => push(v), v ? 'Notifications enabled.' : 'Notifications turned off.')
+            }
           />
         </View>
+        <View style={s.divider} />
         <Text style={s.label}>Quiet hours · your local timezone</Text>
+        <Text style={s.small}>
+          Use the 24-hour clock: 22 means 10 pm. Matching hours turn quiet hours off.
+        </Text>
         <View style={s.row}>
           <Input
             accessibilityLabel="Quiet hours start"
@@ -203,20 +235,24 @@ export default function ProfileScreen() {
           quiet
           disabled={busy}
           onPress={() =>
-            act(() =>
-              api('/me', 'PATCH', {
-                quietStart: Number(start),
-                quietEnd: Number(end),
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              }),
+            act(
+              () =>
+                api('/me', 'PATCH', {
+                  quietStart: Number(start),
+                  quietEnd: Number(end),
+                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                }),
+              'Quiet hours saved.',
             )
           }
         >
           Save quiet hours
         </Button>
       </View>
-      <View style={s.card}>
-        <Text style={s.heading}>Your data belongs with you</Text>
+      <View style={[s.section, { paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.line }]}>
+        <Text accessibilityRole="header" style={s.heading}>
+          Your data belongs with you
+        </Text>
         <Text style={s.body}>
           Your AT identity is portable. Private Tribe moments live here, and you can export your own
           data and photos.
@@ -229,9 +265,11 @@ export default function ProfileScreen() {
           screenshots or downloaded copies.
         </Text>
       </View>
-      <View style={s.card}>
-        <Text style={s.heading}>Signed-in devices</Text>
-        {sessions.data?.map((session) => (
+      <View style={[s.section, { paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.line }]}>
+        <Text accessibilityRole="header" style={s.heading}>
+          Signed-in devices
+        </Text>
+        {sessions.data?.slice(0, showSessions ? undefined : 3).map((session) => (
           <View key={session.id} style={s.between}>
             <View style={{ flex: 1 }}>
               <Text style={s.label}>
@@ -243,13 +281,20 @@ export default function ProfileScreen() {
               <Button
                 quiet
                 disabled={busy}
-                onPress={() => act(() => api('/me/sessions/' + session.id, 'DELETE'))}
+                onPress={() =>
+                  act(() => api('/me/sessions/' + session.id, 'DELETE'), 'Device signed out.')
+                }
               >
                 Revoke
               </Button>
             )}
           </View>
         ))}
+        {!!sessions.data && sessions.data.length > 3 && (
+          <Button quiet onPress={() => setShowSessions(!showSessions)}>
+            {showSessions ? 'Show fewer devices' : `Show all devices (${sessions.data.length})`}
+          </Button>
+        )}
       </View>
       {['blocks', 'mutes'].map((kind) => {
         const list = safety.data?.[kind as 'blocks' | 'mutes'] ?? [];
@@ -266,7 +311,10 @@ export default function ProfileScreen() {
                     quiet
                     disabled={busy}
                     onPress={() =>
-                      act(() => api('/' + kind + '/' + encodeURIComponent(p.did), 'DELETE'))
+                      act(
+                        () => api('/' + kind + '/' + encodeURIComponent(p.did), 'DELETE'),
+                        kind === 'blocks' ? 'Account unblocked.' : 'Account unmuted.',
+                      )
                     }
                   >
                     {kind === 'blocks' ? 'Unblock' : 'Unmute'}
@@ -277,6 +325,7 @@ export default function ProfileScreen() {
           )
         );
       })}
+      <View style={s.divider} />
       <Button quiet onPress={() => router.push('/admin')}>
         Moderation tools
       </Button>
@@ -284,6 +333,7 @@ export default function ProfileScreen() {
         Sign out
       </Button>
       <Button
+        quiet
         danger
         disabled={busy}
         onPress={async () => {

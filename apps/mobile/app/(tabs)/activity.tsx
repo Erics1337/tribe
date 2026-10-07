@@ -1,4 +1,4 @@
-import { Text, View, Pressable } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Profile } from '@tribe/domain';
@@ -14,6 +14,7 @@ import {
   Icon,
   s,
   colors,
+  Action,
 } from '../../src/ui';
 type Activity = {
   id: string;
@@ -32,11 +33,7 @@ export default function Activity() {
   });
   return (
     <Page>
-      <Header
-        eyebrow="Small gestures, real connection"
-        title="A little love."
-        subtitle="Replies and appreciations from your people."
-      />
+      <Header title="A little love." subtitle="Replies and appreciations from your people." />
       <ErrorText error={q.error ?? read.error} />
       {q.isPending && <Loading />}
       {q.data?.length === 0 && (
@@ -47,11 +44,14 @@ export default function Activity() {
         />
       )}
       {q.data?.map((a) => (
-        <Pressable
-          accessibilityRole="button"
+        <Action
           key={a.id}
           onPress={() => router.push({ pathname: '/post/[id]', params: { id: a.postId } })}
-          style={[s.card, s.between]}
+          style={[
+            s.listRow,
+            { paddingHorizontal: 12, backgroundColor: a.read ? undefined : colors.soft },
+          ]}
+          label={`${a.actor.displayName} ${a.kind === 'comment' ? 'left you a reply' : 'appreciated your moment'}${a.read ? '' : ', unread'}`}
         >
           <View style={[s.row, { flex: 1 }]}>
             <Avatar user={a.actor} />
@@ -67,7 +67,7 @@ export default function Activity() {
             <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green }} />
           )}
           <Icon name="chevron-forward-outline" size={16} />
-        </Pressable>
+        </Action>
       ))}
       {!!q.data?.length && (
         <Button quiet disabled={read.isPending} onPress={() => read.mutate()}>

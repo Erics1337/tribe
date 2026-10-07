@@ -1,3 +1,4 @@
+import { useBrowserStyles } from '../src/browser-styles';
 import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -34,6 +35,7 @@ function NotificationNavigation() {
   return null;
 }
 export default function Layout() {
+  useBrowserStyles();
   const [loaded, error] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold });
   if (!loaded && !error) return <Loading />;
   return (

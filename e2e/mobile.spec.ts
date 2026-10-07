@@ -32,6 +32,8 @@ test('catch up, manage circles, publish, comment and export', async ({ page }) =
   await page.getByRole('button', { name: 'Share privately' }).click();
   await expect(page.getByText(caption, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Open moment and options' }).first().click();
+  await page.getByRole('textbox', { name: 'Your reply' }).waitFor();
+  await page.reload();
   await page.getByRole('textbox', { name: 'Your reply' }).fill('A small hello.');
   await page.getByRole('button', { name: 'Send reply', exact: true }).click();
   await expect(page.getByText('A small hello.', { exact: true })).toBeVisible();
@@ -53,6 +55,8 @@ test('circle move stays private and the public network is distinct', async ({ pa
   await page.getByRole('button', { name: 'Inner', exact: true }).last().click();
   await page.getByText('Home', { exact: true }).last().click();
   await page.getByText('Beyond your circles', { exact: true }).click();
+  await expect(page.getByText('Public network', { exact: true })).toBeVisible();
+  await page.reload();
   await expect(page.getByText('Public network', { exact: true })).toBeVisible();
   await expect(
     page.getByText(

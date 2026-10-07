@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, Image, Pressable } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,6 +20,7 @@ import {
   Empty,
   s,
   colors,
+  IconButton,
 } from '../../src/ui';
 type Photo = { uri: string; alt: string; mimeType: string; asset?: Asset };
 export default function Compose() {
@@ -138,7 +139,6 @@ export default function Compose() {
   return (
     <Page>
       <Header
-        eyebrow="Share a little of your day"
         title="An ordinary moment."
         subtitle="It doesn't need to be perfect. Just something you’d like your people to see."
       />
@@ -152,12 +152,12 @@ export default function Compose() {
         placeholder="What’s on your mind?"
         multiline
         maxLength={2000}
-        style={{ minHeight: 140, textAlignVertical: 'top' }}
+        style={{ minHeight: 164, textAlignVertical: 'top' }}
         editable={!busy}
       />
       <Text style={[s.small, { alignSelf: 'flex-end' }]}>{body.length} / 2,000</Text>
       {photos.map((p, i) => (
-        <View key={p.uri} style={s.card}>
+        <View key={p.uri} style={s.section}>
           <Image
             source={{ uri: p.uri }}
             accessibilityLabel={p.alt || 'Selected photo'}
@@ -189,7 +189,7 @@ export default function Compose() {
       <Button quiet icon="image-outline" disabled={photos.length >= 4 || busy} onPress={choose}>
         Add photos · {photos.length}/4
       </Button>
-      <View style={s.card}>
+      <View style={[s.section, { paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.line }]}>
         <View style={s.row}>
           <Icon name="lock-closed-outline" size={18} color={colors.green} />
           <Text style={s.heading}>Who’s this for?</Text>
@@ -208,11 +208,19 @@ export default function Compose() {
       </View>
       <ErrorText error={error ?? audience.error} />
       {review && audience.data && (
-        <View style={s.card}>
-          <Text style={s.heading}>
-            Sharing with {audience.data.recipients.length}{' '}
-            {audience.data.recipients.length === 1 ? 'person' : 'people'}
-          </Text>
+        <View style={[s.card, { backgroundColor: colors.soft }]}>
+          <View style={s.between}>
+            <Text style={[s.heading, { flex: 1 }]}>
+              Sharing with {audience.data.recipients.length}{' '}
+              {audience.data.recipients.length === 1 ? 'person' : 'people'}
+            </Text>
+            <IconButton
+              name="close-outline"
+              label="Edit your moment"
+              disabled={busy}
+              onPress={() => setReview(false)}
+            />
+          </View>
           {audience.data.recipients.map((p) => (
             <View key={p.did} style={s.row}>
               <Avatar user={p} size={32} />
@@ -233,7 +241,8 @@ export default function Compose() {
       )}
       {review ? (
         <Button
-          disabled={busy || !audience.data?.recipients.length}
+          busy={busy}
+          disabled={!audience.data?.recipients.length}
           onPress={publish}
           icon="arrow-up-outline"
         >

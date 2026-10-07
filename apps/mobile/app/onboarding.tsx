@@ -3,9 +3,9 @@ import { router, Redirect } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { useSession } from '../src/session';
 import { api } from '../src/api';
-import { Page, Header, Button, ErrorText, Icon, s, colors } from '../src/ui';
+import { Page, Header, Button, ErrorText, Icon, Loading, s, colors } from '../src/ui';
 export default function Onboarding() {
-  const { user, reload } = useSession();
+  const { user, reload, loading } = useSession();
   const done = useMutation({
     mutationFn: () => api('/me', 'PATCH', { onboarded: true }),
     onSuccess: async () => {
@@ -13,11 +13,16 @@ export default function Onboarding() {
       router.replace('/circles');
     },
   });
+  if (loading)
+    return (
+      <Page>
+        <Loading />
+      </Page>
+    );
   if (!user) return <Redirect href="/sign-in" />;
   return (
     <Page>
       <Header
-        eyebrow="Welcome to Tribe"
         title="Start with your people."
         subtitle="You don't need a big network. A few familiar faces are enough."
       />
@@ -38,10 +43,14 @@ export default function Onboarding() {
           'Catch up at your own pace. No streaks, no pressure to fill every space.',
         ],
       ].map(([icon, title, body]) => (
-        <View key={title} style={s.card}>
-          <Icon name={icon as any} color={colors.green} />
-          <Text style={s.heading}>{title}</Text>
-          <Text style={s.body}>{body}</Text>
+        <View key={title} style={[s.row, { alignItems: 'flex-start', paddingVertical: 12 }]}>
+          <View style={{ paddingTop: 3 }}>
+            <Icon name={icon as any} color={colors.green} />
+          </View>
+          <View style={[s.person, { gap: 8 }]}>
+            <Text style={s.heading}>{title}</Text>
+            <Text style={s.body}>{body}</Text>
+          </View>
         </View>
       ))}
       <Text style={s.small}>
