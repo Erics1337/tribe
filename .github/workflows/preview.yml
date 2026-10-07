@@ -1,0 +1,37 @@
+name: Publish web preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [rebuild/expo-neon]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: tribe-pages
+  cancel-in-progress: true
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tribe/mobile exec expo export --platform web
+        env:
+          EXPO_PUBLIC_API_URL: https://br-round-tree-b5lbzcui-api.compute.c-7.us-east-2.aws.neon.tech
+          EXPO_PUBLIC_BASE_PATH: /tribe
+      - run: cp apps/mobile/dist/index.html apps/mobile/dist/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/mobile/dist
+      - uses: actions/deploy-pages@v4
+        id: deploy

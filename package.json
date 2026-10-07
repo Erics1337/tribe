@@ -3,23 +3,49 @@
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "engines": {
-    "node": ">=20.19.4"
+    "node": ">=22"
   },
   "scripts": {
-    "dev:api": "\"${npm_node_execpath:-node}\" ./scripts/check-node.mjs && pnpm --filter @tribe/api dev",
-    "dev:mobile": "\"${npm_node_execpath:-node}\" ./scripts/check-node.mjs && pnpm --filter @tribe/mobile dev",
-    "dev:ios": "./scripts/dev-ios.sh",
-    "dev:ios:native": "./scripts/dev-ios-native.sh",
-    "atproto:prepare-pages": "node ./scripts/prepare-atproto-pages.mjs",
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "dev": "pnpm --filter @tribe/api dev",
+    "dev:mobile": "pnpm --filter @tribe/mobile start",
+    "dev:web": "pnpm --filter @tribe/mobile web",
+    "build": "node scripts/build-api.mjs",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate": "tsx packages/db/src/migrate.ts",
+    "db:generate": "drizzle-kit generate --config packages/db/drizzle.config.ts",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "dev:seed": "tsx scripts/seed.ts",
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "oauth:key": "tsx scripts/oauth-key.ts",
+    "worker": "pnpm --filter @tribe/api worker",
+    "dev:local": "node --env-file=.env.local-development --import tsx --watch apps/api/src/index.ts",
+    "dev:cloud": "node --env-file=.env.neon --import tsx --watch apps/api/src/index.ts",
+    "db:migrate:local": "node --env-file=.env.local-development --import tsx packages/db/src/migrate.ts",
+    "test:e2e": "playwright test",
+    "restore:drill": "node scripts/restore-drill.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.0.0",
     "@types/pg": "^8.15.6",
-    "@types/node": "^24.7.2",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.5",
+    "esbuild": "^0.28.2",
+    "pg": "^8.23.1",
+    "prettier": "^3.6.2",
+    "sharp": "^0.34.5",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
-  }
+  },
+  "dependencies": {
+    "@neon/config": "^1.8.4",
+    "@neon/env": "^1.5.1"
+  },
+  "type": "module"
 }
