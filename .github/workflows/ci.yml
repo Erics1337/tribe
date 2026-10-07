@@ -17,7 +17,7 @@ jobs:
           POSTGRES_DB: tribe_test
         ports: ['54328:5432']
         options: >-
-          --health-cmd 'pg_isready -U tribe'
+          --health-cmd "pg_isready -U tribe"
           --health-interval 3s --health-timeout 3s --health-retries 20
     steps:
       - uses: actions/checkout@v4

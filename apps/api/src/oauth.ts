@@ -58,12 +58,12 @@ export const safeFetch: typeof fetch = async (input, init) => {
       throw new Error('Private destinations are forbidden.');
     const r = await httpFetch(url, {
       method: request.method,
-      headers: request.headers,
+      headers: Object.fromEntries(request.headers),
       body,
       redirect: 'manual',
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(15000)]),
       dispatcher,
-    } as Parameters<typeof httpFetch>[1]);
+    });
     if (r.status >= 300 && r.status < 400 && r.headers.get('location')) {
       if (
         !['GET', 'HEAD'].includes(request.method) ||
@@ -150,6 +150,17 @@ export async function createOAuth(db: DB, c: Config) {
           url: (await client.authorize(handle, { state: id, scope: 'atproto' })).toString(),
         };
       } catch (e) {
+        const failures: { name: string; code?: string; message: string }[] = [];
+        for (let cause: any = e; cause && failures.length < 5; cause = cause.cause) {
+          failures.push({
+            name: cause.name,
+            code: cause.code,
+            message: String(cause.message)
+              .replace(/https?:\/\/[^\s]+/g, '[url]')
+              .slice(0, 180),
+          });
+        }
+        console.error(JSON.stringify({ event: 'oauth-discovery-failed', failures }));
         await db.query('DELETE FROM login_transactions WHERE id=$1', [id]);
         throw new HttpError(400, 'Could not start sign-in. Check your handle and try again.');
       }
