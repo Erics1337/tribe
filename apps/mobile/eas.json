@@ -1,0 +1,13 @@
+{
+  "cli": { "version": ">=16.0.0" },
+  "build": {
+    "development": { "developmentClient": true, "distribution": "internal" },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://br-round-tree-b5lbzcui-api.compute.c-7.us-east-2.aws.neon.tech"
+      }
+    },
+    "production": { "autoIncrement": true }
+  }
+}

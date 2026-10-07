@@ -1,129 +1,71 @@
 # Tribe
 
-> A relationship-first social app informed by social brain theory, rebuilt for a world with portable identity.
+A quieter place to share ordinary moments with the people you choose. Tribe organizes personal relationships into nested private circles: 5 within 15 within 50 within 150. Wider sharing includes the smaller circles; public followers remain separate.
 
-![Friends gathered around a table](https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&q=80&w=1800)
+This is a fresh Expo and Neon rebuild. AT Protocol provides verified account identity and public-network access. Private photos, recipient grants and circle assignments stay in Tribe’s application backend, rather than public AT repositories.
 
-Tribe is a mobile-first social product for people who want a calmer, more intentional network. Instead of flattening everyone into the same follower graph, Tribe organizes relationships into bounded circles inspired by social brain theory and Dunbar-style limits:
+## Run locally
 
-- `inner` up to 5
-- `close` up to 15
-- `tribe` up to 50
-- `village` up to 150
+Requirements: Node 22 or newer, pnpm 10.13.1, and Docker.
 
-It is also the latest step in a much longer product journey.
+```sh
+pnpm install
+node scripts/setup-local.mjs
+pnpm db:up
+pnpm db:migrate:local
+pnpm dev:seed
+pnpm dev:local
+```
 
-## Origin Story
+In another terminal:
 
-Tribe is an evolution of earlier attempts to build socially healthier software around the science of human relationship limits.
+```sh
+pnpm dev:web
+# or a native development build
+pnpm --filter @tribe/mobile ios
+pnpm --filter @tribe/mobile android
+```
 
-About five years ago, that idea started as **Social Brain Network**, an Instagram-style social app built around grouping relationships according to social brain theory. It aimed at the right problem, but ran into the classic cold start problem: a better social graph model does not matter much if your people are not there yet.
+For the local web preview, paste `.data/local-session.json` into the development sign-in screen. That session is created by a local-only seed script; the API has no demo-login or unverified identity exchange endpoint. Local fixture illustrations are synthetic. Development session controls are excluded from release builds.
 
-That led to a simpler follow-up called **Social Brain Contacts**, a mobile app that grouped people from your phone contacts into meaningful relationship layers. It reduced the cold start problem by using a graph users already had, but it also gave up the power of a portable online identity and a shared networked social layer.
+On a physical phone, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to your computer’s LAN address. For actual OAuth on a phone, use the HTTPS development API and a native build with the registered `tribe` callback scheme.
 
-Tribe is the next swing:
+## Verify
 
-- keep the science-informed model of relationship tiers
-- keep the emphasis on intentional social design
-- avoid starting from zero
-- use the **AT Protocol** so identity is portable and infrastructure is federated
-- tap into an existing online social graph instead of hoping everyone joins a brand-new network from scratch
+```sh
+# Create the isolated test database once
+# This command assumes the Docker service is running.
+docker compose exec -T postgres psql -U tribe -d postgres -c 'CREATE DATABASE tribe_test'
+pnpm check
+pnpm --filter @tribe/mobile export
+pnpm exec playwright install chromium
+pnpm exec playwright test
+```
 
+Tests refuse a database that is not named `tribe_test`. Browser tests use the explicitly local Docker database and seeded development sessions. CI runs type checks, transactional privacy tests, all-platform exports and browser flows.
 
-## Why This Exists
+## Layout
 
-Most social apps optimize for reach, engagement, and scale. Tribe is designed around a different premise: people have finite attention, finite intimacy, and finite relational bandwidth.
+- `apps/mobile`: Expo Router screens, native sign-in return, private photos, composer, circles, activity, account settings and staff review.
+- `apps/api`: Fastify API, OAuth, authorization, private media gateway and background jobs. Supports Node hosting or Neon Functions.
+- `packages/domain`: nested circle rules and request contracts.
+- `packages/db`: Postgres schema and versioned Drizzle migrations.
+- `neon.ts`: branch-scoped API, private storage and scheduled background work.
 
-Tribe is for users who want:
+## Identity and privacy
 
-- a smaller and quieter social layer
-- audience control that maps to real relationships
-- identity they can carry with them
-- a path beyond the cold start problem of new social apps
+Sign-in uses the official server-side AT OAuth client. Only a verified OAuth DID can receive a Tribe session. A single-use completion code is bound to a mobile verifier. Refresh tokens rotate and replay revokes the session.
 
-## What The Repo Contains
+Posting checks the preview against the actual recipient snapshot inside a transaction. Adding someone never exposes older posts. Moving tiers preserves historical grants. Removing or blocking revokes access; re-adding or unblocking does not restore it. Every private media fetch goes through the authenticated gateway. Privacy is server access control, not end-to-end encryption or protection against screenshots.
 
-This repo is a `pnpm` monorepo with:
+An owner’s circle labels and recipient roster are never included in recipient post responses. Comments reveal other participants, so the app does not promise participant anonymity. The public Network surface is explicitly public and separate from private sharing.
 
-- `apps/mobile`: Expo Router React Native client for iOS and Android
-- `apps/api`: Fastify API with Drizzle-based Postgres compatibility
-- `packages/shared`: shared product types, validation schemas, and domain helpers
+## Deployment and status
 
-At the moment, the project uses AT Protocol primarily for identity and authentication. The broader vision is a product where portability, federation, and science-informed social design reinforce each other.
+The isolated Neon development branch is `dev-tribe-rebuild` in the existing Tribe project. Its API is [available here](https://br-round-tree-b5lbzcui-api.compute.c-7.us-east-2.aws.neon.tech/health). The GitHub Pages workflow publishes a web preview using that backend. Preview infrastructure is distinct from production; no production database migration is implied by this repository.
 
-## Current Product Shape
+See [verification results](docs/operations/VERIFICATION.md), [runtime decisions](docs/decisions/001-neon-runtime.md), [deployment and release checks](docs/operations/DEPLOYMENT.md), [privacy and recovery](docs/operations/PRIVACY_AND_RECOVERY.md), [product requirements](docs/PRD.md), and [replacement plan](docs/REBUILD_PLAN.md).
 
-Today the app includes:
+AI circle classification, public publishing, messages, video and stories are deliberately outside this release. Native device sign-in, App Store/TestFlight signing, push credentials, accessibility review on devices, and the friendship-network beta remain release gates. A successful JavaScript export does not replace those checks.
 
-- AT Protocol sign-in with native OAuth on iOS development builds
-- a demo/local sign-in path for faster product iteration
-- onboarding that asks users to shape their circles intentionally
-- tier-based feeds and posting
-- private relationship tiers rather than one flat friend/follower model
-
-The long-term direction includes deeper Bluesky and AT Protocol interoperability, but the current implementation is intentionally scoped so the core product can be tested quickly.
-
-## Local Development
-
-This repo requires Node.js `20.19.4` or newer.
-
-1. Install dependencies:
-
-   ```bash
-   nvm use || nvm install 20.19.4
-   pnpm install
-   ```
-
-2. Copy env files:
-
-   ```bash
-   cp .env.example .env
-   cp apps/mobile/.env.example apps/mobile/.env
-   ```
-
-3. For real AT Protocol OAuth, fill in the blank values in `apps/mobile/.env`:
-
-   - `EXPO_PUBLIC_ATPROTO_CLIENT_ID`
-   - `EXPO_PUBLIC_ATPROTO_CLIENT_URI`
-   - `EXPO_PUBLIC_ATPROTO_REDIRECT_URI`
-
-4. Start the API:
-
-   ```bash
-   pnpm dev:api
-   ```
-
-5. Start the mobile app:
-
-   ```bash
-   pnpm dev:mobile
-   ```
-
-6. Or start both the API and iOS simulator flow together:
-
-   ```bash
-   pnpm dev:ios
-   ```
-
-7. To run a native iOS development build with custom native modules such as AT Protocol OAuth:
-
-   ```bash
-   pnpm dev:ios:native
-   ```
-
-8. To generate a free-hosted OAuth metadata site for a Cloudflare Pages-style hostname:
-
-   ```bash
-   pnpm atproto:prepare-pages -- --host tribepreview.pages.dev
-   ```
-
-   That writes a deployable static site to `dist/atproto-oauth-site` and prints the exact mobile env values to copy into `apps/mobile/.env`.
-
-## Development Notes
-
-- The API runs against in-memory `PGlite` if `DATABASE_URL` is unset, and switches to Postgres-compatible mode when `DATABASE_URL` is provided.
-- Supabase is intended as the managed Postgres and storage layer behind the API, not as the client-auth boundary.
-- `pnpm dev:ios` uses Expo Go. That is enough for the demo/local flow, but Expo Go cannot load `@atproto/oauth-client-expo`; real AT Protocol sign-in needs a native development build.
-- `pnpm dev:ios:native` uses `expo run:ios` and requires local Xcode and iOS simulator tooling. On first run it will generate native project files and compile the iOS app.
-- The native redirect URI must match the app scheme in `apps/mobile/app.config.ts`. The mobile app derives its scheme from `EXPO_PUBLIC_ATPROTO_REDIRECT_URI`, so changing that value requires rebuilding the iOS development app.
-- A free `*.pages.dev` host works for development. The helper command reverses the host labels into the native callback scheme for you, so `tribepreview.pages.dev` becomes `dev.pages.tribepreview:/auth/callback`.
+The original implementation is preserved in Git history, branch `legacy/pre-rebuild`, and annotated tag `legacy-before-rebuild-20261007`.

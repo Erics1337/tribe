@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Tribe",
+    "slug": "tribe",
+    "scheme": "tribe",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "bundleIdentifier": "com.tribe.social", "supportsTablet": true },
+    "android": { "package": "com.tribe.social" },
+    "web": { "bundler": "metro", "output": "single" },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose photos to share with your people.",
+          "cameraPermission": "Capture a moment to share with your people."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": { "typedRoutes": true }
+  }
+}
